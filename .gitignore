@@ -230,3 +230,29 @@ models/
 
 # Python cache
 __pycache__/
+
+# Videos and frames
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.png
+
+# Numpy / data outputs
+*.npy
+results/
+outputs/
+
+# Models
+DECA/data/
+*.tar
+*.pth
+
+# Virtual environments
+deca_env/
+geo_env/
+
+# OS / IDE
+__pycache__/
+.vscode/
+*.log
