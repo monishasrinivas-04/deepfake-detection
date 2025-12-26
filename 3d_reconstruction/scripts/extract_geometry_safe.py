@@ -5,16 +5,38 @@ from tqdm import tqdm
 from mediapipe.python.solutions.face_mesh import FaceMesh
 
 # ----------------------------
-# PATHS
+# PROJECT ROOT (ROBUST)
 # ----------------------------
-REAL_FRAMES = "results/final_demo/input/frames/real"
-FAKE_FRAMES = "results/final_demo/input/frames/fake"
-OUT_DIR = "results/final_demo/geometry"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
+
+
+# ---------------------------
+# PATHS
+# ---------------------------
+REAL_FRAMES = os.path.join(
+    PROJECT_ROOT, "results", "final_demo", "input", "frames", "real"
+)
+
+FAKE_FRAMES = os.path.join(
+    PROJECT_ROOT, "results", "final_demo", "input", "frames", "fake"
+)
+
+OUT_DIR = os.path.join(
+    PROJECT_ROOT, "results", "final_demo", "geometry"
+)
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
+if not os.path.exists(REAL_FRAMES):
+    raise FileNotFoundError(f"REAL_FRAMES not found: {REAL_FRAMES}")
+
+if not os.path.exists(FAKE_FRAMES):
+    raise FileNotFoundError(f"FAKE_FRAMES not found: {FAKE_FRAMES}")
+
+
 # ----------------------------
-# MEDIAPIPE INIT (RELAXED)
+# MEDIAPIPE INIT
 # ----------------------------
 face_mesh = FaceMesh(
     static_image_mode=True,
@@ -30,7 +52,6 @@ def dist(a, b):
     return np.linalg.norm(a - b)
 
 def extract_geometry(img):
-    # 🔴 Resize FIRST (CRITICAL)
     img = cv2.resize(img, (640, 640))
     h, w, _ = img.shape
 
@@ -43,7 +64,6 @@ def extract_geometry(img):
     lm = result.multi_face_landmarks[0].landmark
     pts = np.array([[p.x * w, p.y * h, p.z] for p in lm])
 
-    # Stable landmarks
     left_cheek = pts[234]
     right_cheek = pts[454]
     jaw_left = pts[172]
@@ -52,11 +72,11 @@ def extract_geometry(img):
     nose_right = pts[331]
 
     face_width = dist(left_cheek, right_cheek)
-    jaw_width = dist(jaw_left, jaw_right)
-    nose_width = dist(nose_left, nose_right)
-
     if face_width <= 0:
         return None
+
+    jaw_width = dist(jaw_left, jaw_right)
+    nose_width = dist(nose_left, nose_right)
 
     return np.array([
         jaw_width / face_width,
@@ -64,7 +84,7 @@ def extract_geometry(img):
     ])
 
 # ----------------------------
-# PROCESS
+# PROCESS FOLDER
 # ----------------------------
 def process(folder, label):
     vectors = []
